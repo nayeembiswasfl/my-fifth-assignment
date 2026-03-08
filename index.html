@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Issues Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            geist: ['Geist', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="m-0 min-h-screen font-geist text-[#1e293b] bg-[radial-gradient(circle_at_top,_#f8f9fb_0%,_#eceef2_45%)]">
+  <main>
+    <section id="login-view" class="min-h-screen grid place-items-center p-6">
+      <div class="w-full max-w-[560px] bg-white rounded-[12px] border border-[#dfe3ea] shadow-[0_16px_36px_rgba(16,24,40,0.08)] p-7">
+        <div class="w-[108px] h-[108px] mx-auto rounded-full bg-[#1e293b] text-white grid place-items-center" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-[68px] h-[68px]">
+            <path d="M12 .5C5.648.5.5 5.648.5 12a11.5 11.5 0 0 0 7.86 10.922c.575.106.787-.25.787-.556 0-.275-.012-1.187-.018-2.152-3.2.694-3.875-1.357-3.875-1.357-.523-1.331-1.276-1.684-1.276-1.684-1.044-.713.079-.699.079-.699 1.155.08 1.763 1.186 1.763 1.186 1.026 1.76 2.694 1.252 3.35.957.103-.743.401-1.252.729-1.539-2.555-.291-5.243-1.278-5.243-5.689 0-1.257.449-2.285 1.183-3.09-.119-.29-.513-1.462.112-3.048 0 0 .964-.309 3.159 1.18a10.897 10.897 0 0 1 5.75 0c2.193-1.489 3.156-1.18 3.156-1.18.627 1.586.233 2.758.115 3.048.736.805 1.181 1.833 1.181 3.09 0 4.421-2.692 5.394-5.254 5.68.412.355.779 1.052.779 2.12 0 1.531-.014 2.764-.014 3.14 0 .309.208.667.794.554A11.5 11.5 0 0 0 23.5 12C23.5 5.648 18.352.5 12 .5Z" />
+          </svg>
+        </div>
+
+        <h1 class="text-center mt-[18px] mb-1 text-[clamp(28px,3vw,42px)] font-semibold">GitHub Issues Tracker</h1>
+        <p class="text-center mt-0 mb-5 text-[#64748b] text-[24px] max-[920px]:text-[20px]">Sign in to manage your issues</p>
+
+        <form id="login-form" class="grid gap-[10px]" novalidate>
+          <label for="username" class="text-[28px] font-medium max-[920px]:text-[22px]">Username</label>
+          <input
+            id="username"
+            name="username"
+            type="text"
+            placeholder="Enter Username"
+            required
+            class="w-full border border-[#d3d7df] rounded-[10px] px-4 py-[14px] text-[18px] bg-white focus:outline-none focus:ring-2 focus:ring-[#ab95ff] focus:border-[#ab95ff]"
+          />
+
+          <label for="password" class="text-[28px] font-medium max-[920px]:text-[22px]">Password</label>
+          <div class="relative">
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Enter Password"
+              required
+              class="w-full border border-[#d3d7df] rounded-[10px] px-4 py-[14px] pr-[86px] text-[18px] bg-white focus:outline-none focus:ring-2 focus:ring-[#ab95ff] focus:border-[#ab95ff]"
+            />
+            <button
+              id="toggle-password"
+              type="button"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-[14px] font-semibold text-[#4f16f2] hover:text-[#3f11c8]"
+              aria-label="Show password"
+              aria-pressed="false"
+            >
+              Show
+            </button>
+          </div>
+          <label for="remember" class="inline-flex items-center gap-2 mt-1 mb-1 cursor-pointer select-none">
+            <input id="remember" name="remember" type="checkbox" class="checkbox checkbox-sm border-[#c7d0de] [--chkbg:#4f16f2] [--chkfg:white]" />
+            <span class="text-[18px] text-[#334155] max-[920px]:text-[16px]">Remember me</span>
+          </label>
+
+          <button type="submit" class="rounded-[10px] text-[16px] font-semibold text-white py-[13px] px-4 bg-gradient-to-r from-[#4f16f2] to-[#5b21ff] hover:from-[#3f11c8] hover:to-[#4f16f2]">Sign In</button>
+        </form>
+
+        <div class="flex items-center my-[18px] text-[#334155]">
+          <span class="h-px bg-[#c5ccda] flex-1"></span>
+          <span class="px-3 text-[32px]">OR</span>
+          <span class="h-px bg-[#c5ccda] flex-1"></span>
+        </div>
+
+        <p class="m-0 mb-[10px] text-center text-[#64748b] text-[30px] max-[920px]:text-[20px]">Demo Credentials:</p>
+        <div class="rounded-[10px] bg-[#eef1f6] p-4 text-center text-[22px]">
+          <p class="my-1"><strong>Username:</strong> admin</p>
+          <p class="my-1"><strong>Password:</strong> admin123</p>
+        </div>
+
+        <p id="login-error" class="text-[#dc2626] text-center min-h-[24px] mt-3" role="alert" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="app-view" class="min-h-screen bg-[#eceef2] hidden">
+      <header class="bg-white border-b border-[#dfe3ea] px-[30px] py-[14px] flex justify-between gap-5 flex-wrap max-[640px]:px-[14px]">
+        <div class="flex items-center gap-3">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-[34px] h-[34px]" aria-hidden="true">
+            <path d="M12 .5C5.648.5.5 5.648.5 12a11.5 11.5 0 0 0 7.86 10.922c.575.106.787-.25.787-.556 0-.275-.012-1.187-.018-2.152-3.2.694-3.875-1.357-3.875-1.357-.523-1.331-1.276-1.684-1.276-1.684-1.044-.713.079-.699.079-.699 1.155.08 1.763 1.186 1.763 1.186 1.026 1.76 2.694 1.252 3.35.957.103-.743.401-1.252.729-1.539-2.555-.291-5.243-1.278-5.243-5.689 0-1.257.449-2.285 1.183-3.09-.119-.29-.513-1.462.112-3.048 0 0 .964-.309 3.159 1.18a10.897 10.897 0 0 1 5.75 0c2.193-1.489 3.156-1.18 3.156-1.18.627 1.586.233 2.758.115 3.048.736.805 1.181 1.833 1.181 3.09 0 4.421-2.692 5.394-5.254 5.68.412.355.779 1.052.779 2.12 0 1.531-.014 2.764-.014 3.14 0 .309.208.667.794.554A11.5 11.5 0 0 0 23.5 12C23.5 5.648 18.352.5 12 .5Z" />
+          </svg>
+          <h2 class="m-0 text-[clamp(24px,2vw,40px)]">GitHub Issues Tracker</h2>
+        </div>
+
+        <form id="search-form" class="flex items-center gap-[10px] flex-wrap w-auto max-[640px]:w-full">
+          <input
+            id="search-input"
+            type="search"
+            placeholder="Search issues..."
+            class="w-[min(380px,75vw)] max-[640px]:w-full border border-[#d3d7df] rounded-[10px] px-4 py-[14px] text-[18px] bg-white focus:outline-none focus:ring-2 focus:ring-[#ab95ff] focus:border-[#ab95ff]"
+          />
+          <button type="submit" class="rounded-[10px] text-[16px] font-semibold text-white py-[11px] px-[22px] bg-gradient-to-r from-[#4f16f2] to-[#5b21ff] hover:from-[#3f11c8] hover:to-[#4f16f2] max-[640px]:flex-1">Search</button>
+          <button id="logout-btn" type="button" class="rounded-[10px] border border-[#cfd7e4] bg-white text-[#334155] py-[11px] px-4 text-[16px] font-semibold max-[640px]:flex-1">Logout</button>
+        </form>
+      </header>
+
+      <section class="w-[min(1220px,calc(100%-24px))] mx-auto my-[26px]">
+        <div class="bg-white border border-[#dfe3ea] rounded-[10px] p-4 flex gap-[10px] mb-[14px] max-[640px]:justify-center">
+          <button class="tab-btn active min-w-[88px] rounded-[10px] border border-transparent px-[18px] py-[10px] text-[16px] font-semibold text-white bg-gradient-to-r from-[#4f16f2] to-[#6129f7]" data-tab="all">All</button>
+          <button class="tab-btn min-w-[88px] rounded-[10px] border border-[#d4dbe8] px-[18px] py-[10px] text-[16px] font-semibold text-[#334155] bg-white" data-tab="open">Open</button>
+          <button class="tab-btn min-w-[88px] rounded-[10px] border border-[#d4dbe8] px-[18px] py-[10px] text-[16px] font-semibold text-[#334155] bg-white" data-tab="closed">Closed</button>
+        </div>
+
+        <div id="keyword-suggestions" class="hidden bg-white border border-[#dfe3ea] rounded-[10px] p-[12px_14px] mb-[14px] items-center gap-2 flex-wrap"></div>
+
+        <div class="summary-card bg-white border border-[#dfe3ea] rounded-[10px] p-[18px_20px] flex justify-between items-center gap-4 mb-4 max-[640px]:flex-col max-[640px]:items-start">
+          <div class="flex gap-[14px] items-center">
+            <div class="w-[50px] h-[50px] rounded-full bg-[#e9ddff] grid place-items-center shrink-0">
+              <img src="./assets/Aperture.png" class="w-7 h-7 object-contain" alt="" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 class="m-0 font-bold text-[26px] max-[920px]:text-[22px]"><span id="issue-count">0</span> Issues</h3>
+              <p class="m-0 mt-[2px] text-[#64748b] text-[24px] max-[920px]:text-[16px]">Track and manage your project issues</p>
+            </div>
+          </div>
+          <div class="flex gap-[18px] text-[#111827] text-[22px] font-medium max-[920px]:text-[16px]">
+            <span class="inline-flex items-center gap-[6px]"><i class="w-[10px] h-[10px] rounded-full inline-block bg-[#13b981]"></i>Open</span>
+            <span class="inline-flex items-center gap-[6px]"><i class="w-[10px] h-[10px] rounded-full inline-block bg-[#a855f7]"></i>Closed</span>
+          </div>
+        </div>
+
+        <div id="loading" class="hidden grid place-items-center gap-[10px] my-[30px] text-[#64748b]" aria-live="polite">
+          <div class="relative inline-flex h-12 w-12 items-center justify-center"><span class="loading loading-ring loading-xl text-[#4f16f2]"></span><span class="absolute h-2.5 w-2.5 rounded-full bg-[#4f16f2]/70 animate-pulse"></span></div>
+          <p>Loading issues...</p>
+        </div>
+
+        <p id="error-text" class="text-[#dc2626] text-center min-h-[24px] mt-3"></p>
+
+        <div id="issues-grid" class="issues-grid"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="issue-modal" class="issue-modal w-[calc(100%-24px)] max-w-[700px] border-0 rounded-[12px] p-[30px_32px] max-[640px]:p-[22px_18px] bg-white">
+    <div id="modal-content"></div>
+    <div class="mt-6 flex justify-end">
+      <button id="close-modal" class="rounded-[6px] text-[16px] font-semibold text-white py-[10px] px-4 min-w-[78px] bg-gradient-to-r from-[#4f16f2] to-[#5b21ff] hover:from-[#3f11c8] hover:to-[#4f16f2]" type="button">Close</button>
+    </div>
+  </dialog>
+
+  <script src="./app.js"></script>
+</body>
+</html>
+
+
+
+
+

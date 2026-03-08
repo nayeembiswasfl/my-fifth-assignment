@@ -11,8 +11,13 @@ const AUTH = {
 
 const state = {
   issues: [],
-  activeFetchToken: 0
+  currentTab: 'all',
+  activeFetchToken: 0,
+  uiLoadingTimer: null
 };
+
+const TAB_ACTIVE_CLASSES = ['text-white', 'border-transparent', 'bg-gradient-to-r', 'from-[#4f16f2]', 'to-[#6129f7]'];
+const TAB_INACTIVE_CLASSES = ['text-[#334155]', 'border-[#d4dbe8]', 'bg-white'];
 
 const el = {
   loginView: document.getElementById('login-view'),
@@ -22,6 +27,7 @@ const el = {
   passwordInput: document.getElementById('password'),
   togglePasswordBtn: document.getElementById('toggle-password'),
   logoutBtn: document.getElementById('logout-btn'),
+  tabBtns: document.querySelectorAll('.tab-btn'),
   loading: document.getElementById('loading'),
   issuesGrid: document.getElementById('issues-grid'),
   errorText: document.getElementById('error-text'),
@@ -122,19 +128,32 @@ const createCard = (issue) => {
 };
 
 const renderCounts = (issues) => {
-  el.issueCount.textContent = String(issues.length);
+  const open = issues.filter((issue) => issue.status === 'open').length;
+  const closed = issues.filter((issue) => issue.status === 'closed').length;
+
+  let activeCount = issues.length;
+  if (state.currentTab === 'open') activeCount = open;
+  if (state.currentTab === 'closed') activeCount = closed;
+
+  el.issueCount.textContent = String(activeCount);
+};
+
+const getFilteredIssues = () => {
+  if (state.currentTab === 'all') return state.issues;
+  return state.issues.filter((issue) => issue.status === state.currentTab);
 };
 
 const renderIssues = () => {
+  const list = getFilteredIssues();
   el.issuesGrid.innerHTML = '';
 
-  if (!state.issues.length) {
+  if (!list.length) {
     el.issuesGrid.innerHTML =
-      '<div class="empty-state p-5 text-center text-[#64748b] bg-white border border-[#dfe3ea] rounded-[10px]">No issues found.</div>';
+      '<div class="empty-state p-5 text-center text-[#64748b] bg-white border border-[#dfe3ea] rounded-[10px]">No issues found for this selection.</div>';
     return;
   }
 
-  state.issues.forEach((issue) => {
+  list.forEach((issue) => {
     el.issuesGrid.appendChild(createCard(issue));
   });
 };
@@ -148,7 +167,34 @@ const setError = (message = '') => {
   el.errorText.textContent = message;
 };
 
+const applyTabButtonStyle = (btn, active) => {
+  TAB_ACTIVE_CLASSES.forEach((className) => btn.classList.toggle(className, active));
+  TAB_INACTIVE_CLASSES.forEach((className) => btn.classList.toggle(className, !active));
+  btn.classList.toggle('active', active);
+};
+
+const setActiveTab = (tabName) => {
+  state.currentTab = tabName;
+
+  el.tabBtns.forEach((btn) => {
+    applyTabButtonStyle(btn, btn.dataset.tab === tabName);
+  });
+};
+
+const renderTabWithLoading = () => {
+  clearTimeout(state.uiLoadingTimer);
+  setError('');
+  setLoading(true);
+
+  state.uiLoadingTimer = setTimeout(() => {
+    renderCounts(state.issues);
+    renderIssues();
+    setLoading(false);
+  }, 220);
+};
+
 const fetchIssues = async () => {
+  clearTimeout(state.uiLoadingTimer);
   setLoading(true);
   setError('');
 
@@ -248,10 +294,18 @@ const bindEvents = () => {
   }
 
   el.logoutBtn.addEventListener('click', showLogin);
+
+  el.tabBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      setActiveTab(btn.dataset.tab);
+      renderTabWithLoading();
+    });
+  });
 };
 
 const init = () => {
   bindEvents();
+  setActiveTab(state.currentTab);
 
   const isAuthenticated =
     localStorage.getItem(AUTH.key) === 'true' ||

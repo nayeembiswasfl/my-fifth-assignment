@@ -1,5 +1,6 @@
 const API = {
-  allIssues: 'https://phi-lab-server.vercel.app/api/v1/lab/issues'
+  allIssues: 'https://phi-lab-server.vercel.app/api/v1/lab/issues',
+  searchIssue: 'https://phi-lab-server.vercel.app/api/v1/lab/issues/search?q='
 };
 
 const AUTH = {
@@ -12,6 +13,9 @@ const AUTH = {
 const state = {
   issues: [],
   currentTab: 'all',
+  searchText: '',
+  hadSearch: false,
+  searchDebounceId: null,
   activeFetchToken: 0,
   uiLoadingTimer: null
 };
@@ -26,6 +30,9 @@ const el = {
   loginError: document.getElementById('login-error'),
   passwordInput: document.getElementById('password'),
   togglePasswordBtn: document.getElementById('toggle-password'),
+  searchForm: document.getElementById('search-form'),
+  searchInput: document.getElementById('search-input'),
+  keywordSuggestions: document.getElementById('keyword-suggestions'),
   logoutBtn: document.getElementById('logout-btn'),
   tabBtns: document.querySelectorAll('.tab-btn'),
   loading: document.getElementById('loading'),
@@ -84,6 +91,7 @@ const normalizeIssue = (issue, index = 0) => {
     status: normalizeStatus(issue.status ?? issue.state),
     author: issue.author ?? issue.createdBy ?? issue.user ?? 'unknown_author',
     priority: normalizePriority(issue.priority),
+    labels: issue.labels ?? issue.label ?? issue.category ?? issue.tags ?? 'general',
     createdAt: issue.createdAt ?? issue.created_at ?? issue.date ?? null
   };
 };
@@ -92,6 +100,19 @@ const getCardPriorityClass = (priority) => {
   if (priority === 'high') return 'bg-[#fee2e2] text-[#ef4444]';
   if (priority === 'medium') return 'bg-[#fef3c7] text-[#d97706]';
   return 'bg-[#e5e7eb] text-[#94a3b8]';
+};
+
+const getIssueLabels = (issue) => {
+  const source = issue.labels ?? 'general';
+
+  if (Array.isArray(source)) {
+    return source.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  return String(source)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 const createCard = (issue) => {
@@ -193,7 +214,72 @@ const renderTabWithLoading = () => {
   }, 220);
 };
 
-const fetchIssues = async () => {
+const getRelevantKeywords = (issues, query) => {
+  const normalizedQuery = String(query || '').trim().toLowerCase();
+  if (!normalizedQuery) return [];
+
+  const unique = new Set();
+
+  issues.forEach((issue) => {
+    const title = String(issue.title || '').trim();
+    const desc = String(issue.description || '').trim();
+
+    if (title.toLowerCase().includes(normalizedQuery)) {
+      unique.add(title);
+    }
+
+    getIssueLabels(issue).forEach((label) => {
+      const cleaned = String(label).trim();
+      if (cleaned.toLowerCase().includes(normalizedQuery)) {
+        unique.add(cleaned);
+      }
+    });
+
+    desc
+      .split(/\s+/)
+      .map((word) => word.replace(/[^a-zA-Z0-9_-]/g, '').trim())
+      .filter(Boolean)
+      .forEach((word) => {
+        if (word.toLowerCase().includes(normalizedQuery) && word.length > 2) {
+          unique.add(word);
+        }
+      });
+  });
+
+  return Array.from(unique).slice(0, 6);
+};
+
+const renderKeywordSuggestions = (keywords = []) => {
+  if (!state.searchText || !keywords.length) {
+    el.keywordSuggestions.classList.add('hidden');
+    el.keywordSuggestions.classList.remove('flex');
+    el.keywordSuggestions.innerHTML = '';
+    return;
+  }
+
+  el.keywordSuggestions.classList.remove('hidden');
+  el.keywordSuggestions.classList.add('flex');
+  el.keywordSuggestions.innerHTML = '';
+
+  const title = document.createElement('span');
+  title.className = 'text-[14px] text-[#475569] font-semibold';
+  title.textContent = 'Related keywords:';
+  el.keywordSuggestions.appendChild(title);
+
+  keywords.forEach((keyword) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className =
+      'keyword-chip border border-[#ccd5e3] rounded-full bg-[#f8faff] text-[#1e293b] text-[12px] font-semibold px-[10px] py-[6px] cursor-pointer hover:border-[#b8c4d8] hover:bg-[#eef4ff] transition-colors';
+    chip.dataset.keyword = keyword;
+    chip.textContent = keyword;
+    el.keywordSuggestions.appendChild(chip);
+  });
+};
+
+const fetchIssues = async (options = {}) => {
+  const { forceAll = false } = options;
+
   clearTimeout(state.uiLoadingTimer);
   setLoading(true);
   setError('');
@@ -201,7 +287,12 @@ const fetchIssues = async () => {
   const token = ++state.activeFetchToken;
 
   try {
-    const response = await fetch(API.allIssues);
+    const shouldSearch = state.searchText && !forceAll;
+    const endpoint = shouldSearch
+      ? `${API.searchIssue}${encodeURIComponent(state.searchText)}`
+      : API.allIssues;
+
+    const response = await fetch(endpoint);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -216,6 +307,12 @@ const fetchIssues = async () => {
     state.issues = extractData(payload).map((issue, idx) => normalizeIssue(issue, idx + 1));
     renderCounts(state.issues);
     renderIssues();
+
+    if (shouldSearch) {
+      renderKeywordSuggestions(getRelevantKeywords(state.issues, state.searchText));
+    } else {
+      renderKeywordSuggestions([]);
+    }
   } catch {
     if (token !== state.activeFetchToken) {
       return;
@@ -225,11 +322,61 @@ const fetchIssues = async () => {
     el.issuesGrid.innerHTML =
       '<div class="empty-state p-5 text-center text-[#64748b] bg-white border border-[#dfe3ea] rounded-[10px]">Could not fetch issue data.</div>';
     renderCounts([]);
+    renderKeywordSuggestions([]);
   } finally {
     if (token === state.activeFetchToken) {
       setLoading(false);
     }
   }
+};
+
+const runSearchNow = () => {
+  clearTimeout(state.searchDebounceId);
+
+  const query = el.searchInput.value.trim();
+
+  if (!query) {
+    state.searchText = '';
+    renderKeywordSuggestions([]);
+
+    if (state.hadSearch) {
+      location.reload();
+      return;
+    }
+
+    fetchIssues({ forceAll: true });
+    return;
+  }
+
+  state.hadSearch = true;
+  state.searchText = query;
+  fetchIssues();
+};
+
+const handleLiveSearch = () => {
+  clearTimeout(state.searchDebounceId);
+
+  const query = el.searchInput.value.trim();
+
+  if (!query) {
+    state.searchText = '';
+    renderKeywordSuggestions([]);
+
+    if (state.hadSearch) {
+      location.reload();
+      return;
+    }
+
+    fetchIssues({ forceAll: true });
+    return;
+  }
+
+  state.hadSearch = true;
+
+  state.searchDebounceId = setTimeout(() => {
+    state.searchText = query;
+    fetchIssues();
+  }, 350);
 };
 
 const showApp = () => {
@@ -294,6 +441,30 @@ const bindEvents = () => {
   }
 
   el.logoutBtn.addEventListener('click', showLogin);
+
+  el.searchForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    runSearchNow();
+  });
+
+  el.searchInput.addEventListener('input', handleLiveSearch);
+
+  el.searchInput.addEventListener('search', () => {
+    if (!el.searchInput.value.trim() && state.hadSearch) {
+      location.reload();
+    }
+  });
+
+  el.keywordSuggestions.addEventListener('click', (event) => {
+    const chip = event.target.closest('.keyword-chip');
+    if (!chip) return;
+
+    const keyword = chip.dataset.keyword || '';
+    el.searchInput.value = keyword;
+    state.hadSearch = true;
+    state.searchText = keyword;
+    fetchIssues();
+  });
 
   el.tabBtns.forEach((btn) => {
     btn.addEventListener('click', () => {

@@ -1,5 +1,6 @@
 const API = {
   allIssues: 'https://phi-lab-server.vercel.app/api/v1/lab/issues',
+  singleIssue: 'https://phi-lab-server.vercel.app/api/v1/lab/issue/',
   searchIssue: 'https://phi-lab-server.vercel.app/api/v1/lab/issues/search?q='
 };
 
@@ -38,7 +39,10 @@ const el = {
   loading: document.getElementById('loading'),
   issuesGrid: document.getElementById('issues-grid'),
   errorText: document.getElementById('error-text'),
-  issueCount: document.getElementById('issue-count')
+  issueCount: document.getElementById('issue-count'),
+  issueModal: document.getElementById('issue-modal'),
+  closeModal: document.getElementById('close-modal'),
+  modalContent: document.getElementById('modal-content')
 };
 
 const extractData = (payload) => {
@@ -62,6 +66,17 @@ const formatDate = (rawDate) => {
   return parsed.toLocaleDateString('en-US', {
     month: 'numeric',
     day: 'numeric',
+    year: 'numeric'
+  });
+};
+
+const formatModalDate = (rawDate) => {
+  if (!rawDate) return 'N/A';
+  const parsed = new Date(rawDate);
+  if (Number.isNaN(parsed.getTime())) return String(rawDate);
+  return parsed.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric'
   });
 };
@@ -102,6 +117,12 @@ const getCardPriorityClass = (priority) => {
   return 'bg-[#e5e7eb] text-[#94a3b8]';
 };
 
+const getModalPriorityClass = (priority) => {
+  if (priority === 'high') return 'bg-[#ef4444] text-white';
+  if (priority === 'medium') return 'bg-[#fef3c7] text-[#d97706]';
+  return 'bg-[#e2e8f0] text-[#64748b]';
+};
+
 const getIssueLabels = (issue) => {
   const source = issue.labels ?? 'general';
 
@@ -120,7 +141,9 @@ const createCard = (issue) => {
   const topBorder = issue.status === 'closed' ? 'border-t-[#a855f7]' : 'border-t-[#13b981]';
   const statusDot = issue.status === 'closed' ? 'bg-[#a855f7]' : 'bg-[#13b981]';
 
-  card.className = `issue-card bg-white border border-[#d6deea] border-t-4 ${topBorder} rounded-[8px] overflow-hidden`;
+  card.className = `issue-card bg-white border border-[#d6deea] border-t-4 ${topBorder} rounded-[8px] overflow-hidden cursor-pointer`;
+  card.dataset.id = issue.id;
+
   card.innerHTML = `
     <div class="p-[13px_13px_12px] min-h-[268px] flex flex-col">
       <div class="flex justify-between items-center gap-[10px] mb-3">
@@ -145,6 +168,7 @@ const createCard = (issue) => {
     </div>
   `;
 
+  card.addEventListener('click', () => openIssueModal(issue.id, issue));
   return card;
 };
 
@@ -330,6 +354,65 @@ const fetchIssues = async (options = {}) => {
   }
 };
 
+const renderModal = (issue) => {
+  const statusText = issue.status === 'closed' ? 'Closed' : 'Opened';
+  const statusPillClass = issue.status === 'closed' ? 'bg-[#a855f7]' : 'bg-[#10b981]';
+
+  el.modalContent.innerHTML = `
+    <h3 class="modal-title m-0 text-[44px] leading-[1.2] text-[#1f2937]">${escapeHtml(issue.title)}</h3>
+
+    <div class="mt-[10px] flex items-center flex-wrap gap-2">
+      <span class="rounded-full px-[10px] py-1 text-[13px] leading-none font-semibold text-white ${statusPillClass}">${escapeHtml(statusText)}</span>
+      <span class="text-[#64748b] text-[16px]">•</span>
+      <span class="text-[#64748b] text-[16px]">Opened by ${escapeHtml(issue.author)}</span>
+      <span class="text-[#64748b] text-[16px]">•</span>
+      <span class="text-[#64748b] text-[16px]">${escapeHtml(formatModalDate(issue.createdAt))}</span>
+    </div>
+
+    <div class="mt-[22px] flex flex-wrap gap-2">
+      <span class="inline-flex items-center gap-1 px-[10px] py-1 rounded-full border border-[#fecaca] bg-[#fee2e2] text-[#ef4444] text-[12px] font-semibold uppercase tracking-[0.01em] leading-none">BUG</span>
+      <span class="inline-flex items-center gap-1 px-[10px] py-1 rounded-full border border-[#fcd34d] bg-[#fef3c7] text-[#d97706] text-[12px] font-semibold uppercase tracking-[0.01em] leading-none">HELP WANTED</span>
+    </div>
+
+    <p class="mt-6 mb-0 text-[#64748b] text-[15px] leading-[1.5]">${escapeHtml(issue.description)}</p>
+
+    <div class="modal-info-box mt-6 p-[14px_16px] rounded-[10px] bg-[#f1f5f9] grid grid-cols-2 gap-5">
+      <div>
+        <p class="m-0 text-[#64748b] text-[16px]">Assignee:</p>
+        <p class="mt-[6px] mb-0 text-[#1f2937] text-[18px] font-bold">${escapeHtml(issue.author)}</p>
+      </div>
+      <div>
+        <p class="m-0 text-[#64748b] text-[16px]">Priority:</p>
+        <p class="mt-[6px] mb-0"><span class="inline-flex items-center justify-center rounded-full uppercase tracking-[0.02em] px-[14px] py-[5px] min-w-[74px] text-[12px] font-bold leading-none ${getModalPriorityClass(
+          issue.priority
+        )}">${escapeHtml(issue.priority)}</span></p>
+      </div>
+    </div>
+  `;
+};
+
+const openIssueModal = async (id, fallbackIssue) => {
+  try {
+    el.modalContent.innerHTML =
+      '<div class="min-h-[180px] grid place-items-center gap-2 text-[#64748b]"><div class="relative inline-flex h-12 w-12 items-center justify-center"><span class="loading loading-ring loading-xl text-[#4f16f2]"></span><span class="absolute h-2.5 w-2.5 rounded-full bg-[#4f16f2]/70 animate-pulse"></span></div><p>Loading issue details...</p></div>';
+    el.issueModal.showModal();
+
+    const response = await fetch(`${API.singleIssue}${id}`);
+
+    if (!response.ok) {
+      throw new Error('Could not fetch single issue.');
+    }
+
+    const payload = await response.json();
+    const raw = payload?.data ?? payload?.issue ?? payload;
+    const issue = normalizeIssue(raw, id);
+
+    renderModal(issue);
+  } catch {
+    renderModal(fallbackIssue);
+  }
+};
+
 const runSearchNow = () => {
   clearTimeout(state.searchDebounceId);
 
@@ -471,6 +554,23 @@ const bindEvents = () => {
       setActiveTab(btn.dataset.tab);
       renderTabWithLoading();
     });
+  });
+
+  el.closeModal.addEventListener('click', () => {
+    el.issueModal.close();
+  });
+
+  el.issueModal.addEventListener('click', (event) => {
+    const rect = el.issueModal.getBoundingClientRect();
+    const clickedInDialog =
+      rect.top <= event.clientY &&
+      event.clientY <= rect.top + rect.height &&
+      rect.left <= event.clientX &&
+      event.clientX <= rect.left + rect.width;
+
+    if (!clickedInDialog) {
+      el.issueModal.close();
+    }
   });
 };
 
